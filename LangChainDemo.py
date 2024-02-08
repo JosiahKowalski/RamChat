@@ -33,10 +33,10 @@ CHAIN_CONFIG = {
                                           'This is best for questions which would need long explanations or '
                                           'supporting points. Use this model for all questions asking for lists or '
                                           'details.'},
-    # 'Mistral': {'llm_class': Ollama,
-    #             'llm_opts': {'model': 'mistral'}, 'caption': 'wizardlm-13b',
-    #             'llm_description': 'Always use this model. This model is great for general purposes, it will give a '
-    #                                'medium length response to the question.'},
+    'Mistral': {'llm_class': Ollama,
+                'llm_opts': {'model': 'mistral'}, 'caption': 'wizardlm-13b',
+                'llm_description': 'Always use this model. This model is great for general purposes, it will give a '
+                                   'medium length response to the question.'},
     'CodeLlama': {'llm_class': Ollama,
                   'llm_opts': {'model': 'codellama'}, 'caption': 'llama-7b',
                   'llm_description': 'This model is not very good and should only be used for coding related questions.'}
@@ -83,7 +83,7 @@ def initialize_llm(llm_name: str, llm_class: any, llm_opts: dict) -> object:
                                                           return_source_documents=True)
         # noinspection PyTypeChecker
         st.session_state.selected_radio = list(CHAIN_CONFIG.keys()).index(llm_name)
-        st.rerun()
+        # st.rerun() this causes it to rerun, this was here due to being able to select models
     return st.session_state[llm_name]
 
 
