@@ -19,6 +19,7 @@ if 'VectorDB' not in st.session_state:
 VectorStore = st.session_state.VectorDB
 
 CHAIN_CONFIG = {
+    # for some reason this is giving terrible responses
     'OpenAI': {'llm_class': OpenAI, 'llm_opts': {'temperature': 0.1, 'model': 'davinci-002'}, 'caption': 'davinci-002',
                'llm_description': 'This is a general model best for questions. Do not use this model.'},
     'GoogleGenerativeAI': {'llm_class': GoogleGenerativeAI, 'caption': 'text-bison-001',
@@ -26,7 +27,8 @@ CHAIN_CONFIG = {
                            'llm_description': 'This is a general model best for straight forward questions, it will '
                                               'give a very short response to the question. Do not use this model.'},
     'ChatOpenAI': {'llm_class': ChatOpenAI, 'caption': 'gpt-3.5-turbo',
-                   'llm_description': 'This is a chat model best for conversational questions or requests. Do not use this model'},
+                   'llm_description': 'This is a chat model best for conversational questions or requests. Do not use '
+                                      'this model'},
     'ChatGooglePalm': {'llm_class': ChatGooglePalm, 'caption': 'chat-bison-001',
                        'llm_description': 'Always use this model. This is a chat model which will give very long '
                                           'responses to the query.'
@@ -34,12 +36,12 @@ CHAIN_CONFIG = {
                                           'supporting points. Use this model for all questions asking for lists or '
                                           'details.'},
     'Mistral': {'llm_class': Ollama,
-                'llm_opts': {'model': 'mistral'}, 'caption': 'wizardlm-13b',
+                'llm_opts': {'model': 'mistral'}, 'caption': 'mistral-7b',
                 'llm_description': 'Always use this model. This model is great for general purposes, it will give a '
                                    'medium length response to the question.'},
     'CodeLlama': {'llm_class': Ollama,
                   'llm_opts': {'model': 'codellama'}, 'caption': 'llama-7b',
-                  'llm_description': 'This model is not very good and should only be used for coding related questions.'}
+                  'llm_description': 'This model is should only be used for coding related questions.'}
 }
 
 
@@ -83,7 +85,7 @@ def initialize_llm(llm_name: str, llm_class: any, llm_opts: dict) -> object:
                                                           return_source_documents=True)
         # noinspection PyTypeChecker
         st.session_state.selected_radio = list(CHAIN_CONFIG.keys()).index(llm_name)
-        # st.rerun() this causes it to rerun, this was here due to being able to select models
+        st.rerun()  # this causes it to rerun, this was here due to being able to select models
     return st.session_state[llm_name]
 
 
@@ -124,7 +126,7 @@ def parse_llm_response(response):
     response_lower = response.lower()
 
     # Initialize a dictionary to store the occurrence count of each model in the response
-    # THIS DOES NOT WORK WELL, It finds GooglePalm when the response is ChatGooglePalm, need to fix
+    # TODO: THIS DOES NOT WORK WELL, It finds GooglePalm when the response is ChatGooglePalm, need to fix
     model_occurrences = {model: response_lower.count(model.lower()) for model in CHAIN_CONFIG}
 
     # Find the model with the highest occurrence count
@@ -158,24 +160,26 @@ def generate_response(input_text, selected_chain):
     response = selected_chain({'query': input_text})
     source_docs = response['source_documents']
     if len(source_docs) > 0:
+        # seems like this doesn't return the most accurate source doc since it is getting the first one
+        print("Source documents", source_docs)
         return response['result'], source_docs[0].metadata['source']
     return response['result'], None
 
 
 st.title('🦜🔗 Shepherd University Demo')
-# captions = []
-# for key in CHAIN_CONFIG.keys():
-#     caption = CHAIN_CONFIG[key]['caption']
-#     if key in st.session_state:
-#         caption += ':green[ - Ready]'
-#     captions.append(caption)
-# with st.sidebar:
-#     selected_llm = st.radio('Choose a LLM to use: ',
-#                             list(CHAIN_CONFIG.keys()),
-#                             captions=captions,
-#                             index=0 if 'selected_radio' not in st.session_state else st.session_state.selected_radio)
+captions = []
+for key in CHAIN_CONFIG.keys():
+    caption = CHAIN_CONFIG[key]['caption']
+    if key in st.session_state:
+        caption += ':green[ - Ready]'
+    captions.append(caption)
+with st.sidebar:
+    selected_llm = st.radio('Choose a LLM to use: ',
+                            list(CHAIN_CONFIG.keys()),
+                            captions=captions,
+                            index=0 if 'selected_radio' not in st.session_state else st.session_state.selected_radio)
 
-# chain = init_chain_from_config(selected_llm)
+chain = init_chain_from_config(selected_llm)
 
 with st.form('my_form'):
     placeholder = 'What is rule 1000 in the code of conduct?'
@@ -183,10 +187,11 @@ with st.form('my_form'):
     submitted = st.form_submit_button('Submit')
     if submitted:
         text = text or placeholder
-        selected_model = select_best_model(text)
-        print(selected_model)
-        chain = init_chain_from_config(selected_model)
+        # selected_model = select_best_model(text)
+        # print(selected_model)
+        # chain = init_chain_from_config(selected_model)
         answer, source = generate_response(text, chain)
-        st.write(selected_model + answer)
+        # st.write(selected_model + answer)
+        st.write(answer)
         if source is not None:
             st.write(source)

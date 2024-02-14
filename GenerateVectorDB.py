@@ -1,13 +1,22 @@
-import pickle
+import os
 
+import streamlit as st
 from bs4 import BeautifulSoup as Soup
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-
+from langchain_community.embeddings import OllamaEmbeddings, JinaEmbeddings
 from recursive_url_loader import RecursiveUrlLoader
 
+os.environ['GOOGLE_API_KEY'] = st.secrets['PALM_API_KEY']
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+# embeddings = OllamaEmbeddings()  # model='mistral'
+# embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", task_type="retrieval_document")
+# embeddings = JinaEmbeddings(
+#     jina_api_key='jina_78e0899aa68f400d9e8570e8dc5e823779amu6-0kF3iw2KzLc0cJ8GwKD0W',
+#     model_name="jina-embeddings-v2-base-en"
+# )
 
 
 def prepare_docs():
@@ -17,7 +26,7 @@ def prepare_docs():
     :return: A tuple containing the loaded documents and the embeddings.
     :rtype: tuple
     """
-    url = "https://www.shepherd.edu/student-handbook"
+    url = "https://www.shepherd.edu/student-handbook/"
 
     # I modified the Recursive URL Loader to include the root url in the extraction
     loader = RecursiveUrlLoader(url=url, max_depth=1, extractor=lambda x: Soup(x, "html.parser").text)
@@ -41,6 +50,9 @@ def get_vector_db():
     """
     try:
         vectors = FAISS.load_local("faiss_store_openai", embeddings)
+        # vectors = FAISS.load_local("faiss_store_ollama", embeddings)
+        # vectors = FAISS.load_local("faiss_store_google", embeddings)
+        # vectors = FAISS.load_local("faiss_store_jina", embeddings)
         return vectors
         # with open("faiss_store_openai.pkl", "rb") as f:
         #     vectors = pickle.load(f)
@@ -49,4 +61,7 @@ def get_vector_db():
         docs = prepare_docs()
         vector_store = FAISS.from_documents(docs, embeddings)
         vector_store.save_local("faiss_store_openai")
+        # vector_store.save_local("faiss_store_ollama")
+        # vector_store.save_local("faiss_store_google")
+        # vector_store.save_local("faiss_store_jina")
         return vector_store
