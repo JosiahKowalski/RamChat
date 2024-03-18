@@ -35,11 +35,12 @@ class LLM:
         return self.model_name
 
     def get_retrieval_qa(self, vector_store, memory):
-        return RetrievalQA.from_chain_type(llm=self.model(**self.opts),
-                                           chain_type='stuff',
-                                           retriever=vector_store.as_retriever(),
-                                           return_source_documents=True,
-                                           chain_type_kwargs={
-                                               "prompt": LLM.prompt,
-                                               "memory": memory
-                                           })
+        chain = RetrievalQA.from_chain_type(llm=self.model(**self.opts),
+                                            chain_type='stuff',
+                                            retriever=vector_store.as_retriever(),
+                                            return_source_documents=True,
+                                            chain_type_kwargs={
+                                                "prompt": LLM.prompt,
+                                                "memory": memory
+                                            })
+        return chain
